@@ -120,3 +120,16 @@ def sortRowsByOrder(subsetRows):
     return sortedRows
 
 
+def getChildrenRows(row, allRows):
+    '''
+    Get children rows (notion pages) of the given row from a list of rows based on their relational property 'Parent Tweet'
+    Args:
+        row: (notion row) row should contain a key named id
+        allRows: (list of notion rows) should contain property named Parent Tweet
+    Returns:
+        childrenRows: (list of notion rows) rows from allRows whose parent is row
+    '''    
+    parentId = row['id']
+    childrenRows = [item for item in allRows if item['properties']['Parent Tweet']['relation'][0]['id'] == parentId]
+
+    return childrenRows
