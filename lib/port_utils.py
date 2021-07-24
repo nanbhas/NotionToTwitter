@@ -133,3 +133,106 @@ def getChildrenRows(row, allRows):
     childrenRows = [item for item in allRows if item['properties']['Parent Tweet']['relation'][0]['id'] == parentId]
 
     return childrenRows
+
+
+def postRowToTwitter(row, api, notion):
+    '''
+    Post notion row to twitter + prints staus
+    Args:
+        row: (notion row) 
+        api: (TwitterAPI) instance of twitter api 
+        notion: (notion Client) Notion client object
+    '''    
+    # verify if the row is not already tweeted
+    if ~row['properties']['Tweeted?']['checkbox']:
+        
+        rowID = row['id']
+        parentID = row['properties']['Parent Tweet']['relation'][0]['id']
+        imPrefix = row['properties']['Image Path Prefix']['rich_text'][0]['text']['content']
+        try: 
+            imName = row['properties']['Image File Name']['rich_text'][0]['text']['content']
+        except:
+            imName = None
+        imfile = None if imName is None else os.path.join(imPrefix, imName)
+        tweetStatus = row['properties']['Tweet']['title'][0]['text']['content']
+        
+        # parent
+        if rowID == parentID:
+
+            # if no image: direct post
+            if imfile is None:
+                print('Parent: start direct post')
+                # STEP 1 - post tweet 
+                w = api.request('statuses/update', {'status': tweetStatus})
+                print('SUCCESS' if w.status_code == 200 else 'PROBLEM: ' + w.text)
+                # STEP 2 - update Notion
+                tweetID = str(w.json()['id'])
+                updates = {}
+                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
+                updates['Tweeted?'] = {"checkbox": True}
+                notion.pages.update(rowID, properties = updates)
+                print('updated Notion')
+
+            # else image + post
+            else:
+                print('Parent: start image upload + direct post')
+                # STEP 1 - upload image
+                file = open(imfile, 'rb')
+                data = file.read()
+                w = api.request('media/upload', None, {'media': data})
+                print('UPLOAD MEDIA SUCCESS' if w.status_code == 200 else 'UPLOAD MEDIA FAILURE: ' + w.text)
+                # STEP 2 - post tweet with a reference to uploaded image
+                if w.status_code == 200:
+                    mediaID = w.json()['media_id']
+                    ww = api.request('statuses/update', {'status': tweetStatus, 'media_ids': mediaID})
+                    print('UPDATE STATUS SUCCESS' if ww.status_code == 200 else 'UPDATE STATUS FAILURE: ' + ww.text)
+                # STEP 3 - update Notion
+                tweetID = str(ww.json()['id'])
+                updates = {}
+                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
+                updates['Tweeted?'] = {"checkbox": True}
+                notion.pages.update(rowID, properties = updates)
+                print('updated Notion')
+
+        # child
+        else:
+            # get original post Tweet ID
+            parentTweetID = int(row['properties']['Parent Tweet ID']['rollup']['array'][0]['text'])
+
+            # if no image: direct reply
+            if imfile is None:
+                print('Child: start direct reply')
+                # STEP 1 - post tweet 
+                w = api.request('statuses/update', {'status': tweetStatus, 'in_reply_to_status_id': parentTweetID})
+                print('SUCCESS' if w.status_code == 200 else 'PROBLEM: ' + w.text)
+                # STEP 2 - update Notion
+                tweetID = str(w.json()['id'])
+                updates = {}
+                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
+                updates['Tweeted?'] = {"checkbox": True}
+                notion.pages.update(rowID, properties = updates)
+                print('updated Notion')
+
+            # else image + reply
+            else:
+                print('Child: start image upload + direct reply')
+                # STEP 1 - upload image
+                file = open(imfile, 'rb')
+                data = file.read()
+                w = api.request('media/upload', None, {'media': data})
+                print('UPLOAD MEDIA SUCCESS' if w.status_code == 200 else 'UPLOAD MEDIA FAILURE: ' + w.text)
+                # STEP 2 - post tweet reply with a reference to uploaded image
+                if w.status_code == 200:
+                    mediaID = w.json()['media_id']
+                    ww = api.request('statuses/update', {'status': tweetStatus, 'in_reply_to_status_id': parentTweetID, 'media_ids': mediaID})
+                    print('UPDATE STATUS SUCCESS' if ww.status_code == 200 else 'UPDATE STATUS FAILURE: ' + ww.text)
+                # STEP 3 - update Notion
+                tweetID = str(ww.json()['id'])
+                updates = {}
+                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
+                updates['Tweeted?'] = {"checkbox": True}
+                notion.pages.update(rowID, properties = updates)
+                print('updated Notion')
+
+    else:
+        raise AssertionError
