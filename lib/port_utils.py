@@ -10,9 +10,60 @@ sys.path.append('../')
 
 import time
 import arrow
-import json
 
-from tqdm import tqdm   
+
+class NotionTweetRow():
+    ''' A class denoting a row in the Notion twitter database '''
+
+    def __init__(self, row, notion):
+        '''
+        Args:
+            row: (notion row)
+            notion: (notion Client) Notion client object
+        '''
+
+        self.pageID = row['id']
+        self.created = arrow.get(row['created_time']).to('US/Pacific')
+        self.lastEdited = arrow.get(row['last_edited_time']).to('US/Pacific')
+        self.pageURL = row['url']
+        
+        self.title = row['properties']['Tweet']['title'][0]['text']['content'] if row['properties']['Tweet']['title'] else None
+
+        try:
+            self.postDate = arrow.get(row['properties']['Post Date']['date']['start'])
+        except KeyError:
+            self.postDate = None
+
+        self.tweeted = row['properties']['Tweeted?']['checkbox']
+
+        self.imagePathPrefix = row['properties']['Image Path Prefix']['formula']['string']
+
+        self.rawContent = notion.blocks.children.list(self.pageID)
+        self.threadCount = len(self.rawContent['results'])
+
+    def getTweetThread(self):
+        '''
+        Returns:
+            tweetThread: (list of dict)
+                                each dict has keys: 'text', 'images'
+                                'text': (str)
+                                'images': (list of str) list of image names
+        '''
+        tweetThread = []
+        for item in self.rawContent['results']:
+            para = item['paragraph']['text'][0]['plain_text']
+            text = para.split('<img>')[0]
+            try:
+                tmp = para.split('<img>')[1:]
+                images = [os.path.join(self.imagePathPrefix, item) for item in tmp]
+            except:
+                images = None
+            tweet = {'text': text, 'images': images}
+
+            tweetThread.append(tweet)
+
+        return tweetThread
+
 
 def getAllUntweetedRowsFromNotionDatabase(notion, notionDB_id):
     '''
@@ -88,151 +139,59 @@ def filterRowsToBePostedBasedOnDate(allRows, datetime):
     Returns:
         filteredRows: (list of notion rows)    
     '''
-    arrowTime = arrow.get(datetime).to('US/Pacific')
-    filteredRows = [item for item in allRows if arrow.get(item['properties']['Post Date']['date']['start']).date() == arrowTime.date()]
+    arrowTime = arrow.get(datetime)
+
+    filteredRows = [item for item in allRows if 'Post Date' in item['properties'] and arrow.get(item['properties']['Post Date']['date']['start']).date() == arrowTime.date()]
     
     return filteredRows
-
-
-def getStarterRows(allRows):
-    '''
-    Filters rows (notion pages) from a list of rows whose 'Children Tweets' column is not empty
-    Args:
-        allRows: (list of notion rows)  each row should contain a relation property named Children Tweets  
-    Returns:
-        starterRows: (list of notion rows)    
-    '''
-    starterRows = [item for item in allRows if len(item['properties']['Children Tweets']['relation']) > 0 ]
-    
-    return starterRows
-
-
-def sortRowsByOrder(subsetRows):
-    '''
-    Sort rows (notion pages) from a list of rows based on their 'Order' property
-    Args:
-        subsetRows: (list of notion rows)  each row should contain a property named Order
-    Returns:
-        sortedRows: (list of notion rows) sorted by their order property   
-    '''
-    sortedRows = sorted(subsetRows, key = lambda i: i['properties']['Order']['number'])
-    
-    return sortedRows
-
-
-def getChildrenRows(row, allRows):
-    '''
-    Get children rows (notion pages) of the given row from a list of rows based on their relational property 'Parent Tweet'
-    Args:
-        row: (notion row) row should contain a key named id
-        allRows: (list of notion rows) should contain property named Parent Tweet
-    Returns:
-        childrenRows: (list of notion rows) rows from allRows whose parent is row
-    '''    
-    parentId = row['id']
-    childrenRows = [item for item in allRows if item['properties']['Parent Tweet']['relation'][0]['id'] == parentId]
-
-    return childrenRows
 
 
 def postRowToTwitter(row, api, notion):
     '''
     Post notion row to twitter + prints staus
     Args:
-        row: (notion row) 
+        row: (NotionTweetRow)
         api: (TwitterAPI) instance of twitter api 
         notion: (notion Client) Notion client object
     '''    
     # verify if the row is not already tweeted
-    if ~row['properties']['Tweeted?']['checkbox']:
-        
-        rowID = row['id']
-        parentID = row['properties']['Parent Tweet']['relation'][0]['id']
-        imPrefix = row['properties']['Image Path Prefix']['rich_text'][0]['text']['content']
-        try: 
-            imName = row['properties']['Image File Name']['rich_text'][0]['text']['content']
-        except:
-            imName = None
-        imfile = None if imName is None else os.path.join(imPrefix, imName)
-        tweetStatus = row['properties']['Tweet']['title'][0]['text']['content']
-        
-        # parent
-        if rowID == parentID:
+    if ~row.tweeted:
 
-            # if no image: direct post
-            if imfile is None:
-                print('Parent: start direct post')
-                # STEP 1 - post tweet 
-                w = api.request('statuses/update', {'status': tweetStatus})
-                print('SUCCESS' if w.status_code == 200 else 'PROBLEM: ' + w.text)
-                # STEP 2 - update Notion
-                tweetID = str(w.json()['id'])
-                updates = {}
-                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
-                updates['Tweeted?'] = {"checkbox": True}
-                notion.pages.update(rowID, properties = updates)
-                print('updated Notion')
+        replyToID, mediaID, tweetText = None, None, None
+        # get thread from notion
+        thread = row.getTweetThread()
 
-            # else image + post
+        for tweet in thread:
+            
+            # tweet text
+            tweetText = tweet['text']
+
+            # media images
+            if tweet['images']:
+                # loop through images, upload them, get their media ids
+                mediaID =''
+                for img in tweet['images']:
+                    file = open(img, 'rb')
+                    data = file.read()
+                    w = api.request('media/upload', None, {'media': data})
+                    print('UPLOAD MEDIA SUCCESS' if w.status_code == 200 else 'UPLOAD MEDIA FAILURE: ' + w.text)
+                    if w.status_code == 200:
+                        mediaID = mediaID + str(w.json()['media_id']) + ','
             else:
-                print('Parent: start image upload + direct post')
-                # STEP 1 - upload image
-                file = open(imfile, 'rb')
-                data = file.read()
-                w = api.request('media/upload', None, {'media': data})
-                print('UPLOAD MEDIA SUCCESS' if w.status_code == 200 else 'UPLOAD MEDIA FAILURE: ' + w.text)
-                # STEP 2 - post tweet with a reference to uploaded image
-                if w.status_code == 200:
-                    mediaID = w.json()['media_id']
-                    ww = api.request('statuses/update', {'status': tweetStatus, 'media_ids': mediaID})
-                    print('UPDATE STATUS SUCCESS' if ww.status_code == 200 else 'UPDATE STATUS FAILURE: ' + ww.text)
-                # STEP 3 - update Notion
-                tweetID = str(ww.json()['id'])
-                updates = {}
-                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
-                updates['Tweeted?'] = {"checkbox": True}
-                notion.pages.update(rowID, properties = updates)
-                print('updated Notion')
+                mediaID = None
 
-        # child
-        else:
-            # get original post Tweet ID
-            parentTweetID = int(row['properties']['Parent Tweet ID']['rollup']['array'][0]['text'])
+            # post tweet with a reference to uploaded image as a reply to the replyToID
+            r = api.request('statuses/update', {'status': tweetText, 'in_reply_to_status_id': replyToID, 'media_ids': mediaID})
+            print('UPDATE STATUS SUCCESS' if r.status_code == 200 else 'UPDATE STATUS FAILURE: ' + r.text)
 
-            # if no image: direct reply
-            if imfile is None:
-                print('Child: start direct reply')
-                # STEP 1 - post tweet 
-                w = api.request('statuses/update', {'status': tweetStatus, 'in_reply_to_status_id': parentTweetID})
-                print('SUCCESS' if w.status_code == 200 else 'PROBLEM: ' + w.text)
-                # STEP 2 - update Notion
-                tweetID = str(w.json()['id'])
-                updates = {}
-                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
-                updates['Tweeted?'] = {"checkbox": True}
-                notion.pages.update(rowID, properties = updates)
-                print('updated Notion')
-
-            # else image + reply
-            else:
-                print('Child: start image upload + direct reply')
-                # STEP 1 - upload image
-                file = open(imfile, 'rb')
-                data = file.read()
-                w = api.request('media/upload', None, {'media': data})
-                print('UPLOAD MEDIA SUCCESS' if w.status_code == 200 else 'UPLOAD MEDIA FAILURE: ' + w.text)
-                # STEP 2 - post tweet reply with a reference to uploaded image
-                if w.status_code == 200:
-                    mediaID = w.json()['media_id']
-                    ww = api.request('statuses/update', {'status': tweetStatus, 'in_reply_to_status_id': parentTweetID, 'media_ids': mediaID})
-                    print('UPDATE STATUS SUCCESS' if ww.status_code == 200 else 'UPDATE STATUS FAILURE: ' + ww.text)
-                # STEP 3 - update Notion
-                tweetID = str(ww.json()['id'])
-                updates = {}
-                updates['Tweet ID'] = {"rich_text": [{"text": { "content": tweetID}}]}
-                updates['Tweeted?'] = {"checkbox": True}
-                notion.pages.update(rowID, properties = updates)
-                print('updated Notion')
-
+            # update reply to ID
+            replyToID = str(r.json()['id'])
+   
+        # update Notion
+        updates = {}
+        updates['Tweeted?'] = {"checkbox": True}
+        notion.pages.update(row.pageID, properties = updates)
+        print('Updated Notion')
+        
     else:
-        raise AssertionError
+        print('Already tweeted')
