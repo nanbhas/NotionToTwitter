@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # filter based on datetime
     todayNotionRows = filterRowsToBePostedBasedOnDate(allNotionRows, datetime)
-    print(str(len(todayNotionRows)) + ' filtered rows for today'
+    print(str(len(todayNotionRows)) + ' filtered rows for today')
 
     # loop over row in filtered rows collection
     for row in todayNotionRows: 
