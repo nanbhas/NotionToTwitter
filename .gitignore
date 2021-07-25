@@ -1,6 +1,7 @@
 # Custom
 secrets
 images
+STDOUT_examples.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
