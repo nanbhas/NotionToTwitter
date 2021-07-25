@@ -52,7 +52,7 @@ class NotionTweetRow():
         tweetThread = []
         for item in self.rawContent['results']:
             try:
-                para = item['paragraph']['text'][0]['plain_text']
+                para = ''.join([e['plain_text'] for e in item['paragraph']['text']])
             except:
                 pass
             text = para.split('<img>')[0]
