@@ -161,8 +161,10 @@ def postRowToTwitter(row, api, notion):
     if ~row.tweeted:
 
         replyToID, mediaID, tweetText = None, None, None
+        errorText = ''
         # get thread from notion
         thread = row.getTweetThread()
+        tweeted = True
 
         for tweet in thread:
             
@@ -184,15 +186,21 @@ def postRowToTwitter(row, api, notion):
                 mediaID = None
 
             # post tweet with a reference to uploaded image as a reply to the replyToID
-            r = api.request('statuses/update', {'status': tweetText, 'in_reply_to_status_id': replyToID, 'media_ids': mediaID})
-            print('UPDATE STATUS SUCCESS' if r.status_code == 200 else 'UPDATE STATUS FAILURE: ' + r.text)
+            try:
+                r = api.request('statuses/update', {'status': tweetText, 'in_reply_to_status_id': replyToID, 'media_ids': mediaID})
+                # update error text
+                errorText = errorText + '\n' + 'UPDATE STATUS SUCCESS' if r.status_code == 200 else 'UPDATE STATUS FAILURE: ' + r.text
+                # update reply to ID
+                replyToID = str(r.json()['id'])
 
-            # update reply to ID
-            replyToID = str(r.json()['id'])
+            except:
+                tweeted = False
+                pass
    
         # update Notion
         updates = {}
-        updates['Tweeted?'] = {"checkbox": True}
+        updates['Tweeted?'] = {"checkbox": tweeted}
+        updates['Error Message'] = {"rich_text": [{"text": { "content": errorText }}]}    
         notion.pages.update(row.pageID, properties = updates)
         print('Updated Notion')
         
