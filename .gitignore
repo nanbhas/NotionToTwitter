@@ -1,7 +1,9 @@
 # Custom
 secrets
 images
-STDOUT_examples.txt
+STDOUTlog.txt
+globalStore/privateConstants.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
