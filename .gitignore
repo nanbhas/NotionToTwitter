@@ -1,7 +1,9 @@
 # Custom
 secrets
 images
-STDOUTlog.txt
+STDOUTlog_nanbhas.txt
+STDOUTlog_medai.txt
+STDOUTlog_test.txt
 globalStore/privateConstants.py
 
 
