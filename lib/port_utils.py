@@ -30,6 +30,11 @@ class NotionTweetRow():
         self.title = row['properties']['Tweet']['title'][0]['text']['content'] if row['properties']['Tweet']['title'] else None
 
         try:
+            self.retweetURL = row['properties']['Retweet URL']['url']
+        except KeyError:
+            self.retweetURL = None
+
+        try:
             self.postDate = arrow.get(row['properties']['Post Date']['date']['start'])
         except KeyError:
             self.postDate = None
@@ -63,9 +68,10 @@ class NotionTweetRow():
                 images = None
             tweet = {'text': text, 'images': images}
 
-            tweetThread.append(tweet)
+            if text != '':
+                tweetThread.append(tweet)
 
-        return tweetThread
+        return tweetThread, self.retweetURL
 
 
 def getAllUntweetedRowsFromNotionDatabase(notion, notionDB_id):
@@ -162,11 +168,11 @@ def postRowToTwitter(row, api, notion):
 
         # defaults
         replyToID, mediaID, tweetText = None, None, None
-        errorText = ''
+        errorText, tweetID = '', ''
         tweeted, firstTweet = True, True
 
-        # get thread from notion
-        thread = row.getTweetThread()
+        # get thread from notion and the retweet URL if retweet
+        thread, retweetURL = row.getTweetThread()
 
         for tweet in thread:
             
@@ -189,7 +195,10 @@ def postRowToTwitter(row, api, notion):
 
             # post tweet with a reference to uploaded image as a reply to the replyToID
             try:
-                r = api.request('statuses/update', {'status': tweetText, 'in_reply_to_status_id': replyToID, 'media_ids': mediaID})
+                if replyToID:
+                    r = api.request('statuses/update', {'status': tweetText, 'in_reply_to_status_id': replyToID, 'media_ids': mediaID})
+                else:
+                    r = api.request('statuses/update', {'status': tweetText, 'attachment_url': retweetURL})
                 # update error text
                 errorText = errorText + '\n' + 'UPDATE STATUS SUCCESS' if r.status_code == 200 else 'UPDATE STATUS FAILURE: ' + r.text
                 # update reply to ID
