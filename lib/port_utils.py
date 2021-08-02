@@ -160,12 +160,13 @@ def postRowToTwitter(row, api, notion):
     # verify if the row is not already tweeted
     if ~row.tweeted:
 
+        # defaults
         replyToID, mediaID, tweetText = None, None, None
         errorText = ''
+        tweeted, firstTweet = True, True
+
         # get thread from notion
         thread = row.getTweetThread()
-        tweeted = True
-        firstTweet = True
 
         for tweet in thread:
             
