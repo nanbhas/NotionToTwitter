@@ -52,12 +52,16 @@ GoogleDrive/images/
 5. Create a database on Notion to contain all the entries you need to post on Twitter. Make sure it has the following properties. If you want to add more properties or remove, modify the functions and class in `lib/port_utils.py`.
 ```
 Title property: Tweet
-Formula properties: Image Path Prefix
+Formula properties: Image Path Prefix, Username, Start Tweet URL
 Bool properties: Tweeted?
 Date properties: Post Date
+Text properties: Error Message, Start Tweet ID
+URL properties: Retweet URL
 ```
-**Note**: The formula for the `Image Path Prefix` property should be `format("path-to-your-local-images-folder")`
-6. Get its `databaseID` and add it to `secrets/secrets_notion.json` in the following format:
+- **Note**: The formula for the `Image Path Prefix` property should be `format("path-to-your-local-images-folder")`
+- **Note**: The formula for the `Username` property should be `format("your-twitter-username")`
+- **Note**: Write your tweet / tweet thread in the page content (row) of the datebase -- one tweet per block. If you have an image for any of the tweets, just add an `<img>` tag followed by the name of the image. e.g. `tweet text here blah blach <img>image-name.png`. If the first tweet in the thread (or the only tweet in the thread) is a quote retweet, add the URL of the retweet in the property `Retweet URL`.
+6. Get the `databaseID` and add it to `secrets/secrets_notion.json` in the following format:
 ```
 {
     "notionToken": "your notion token",
@@ -65,7 +69,7 @@ Date properties: Post Date
 }
 ```
 7. Run the python script `src/notionToTwitter.py` (no command line args)
-8. You can periodically run this file again as a script `scripts/runMendToNotion.sh` using a crontab job to get periodic updates (I recommend every day)
+8. You can periodically run this file again as a script `scripts/runNotionToTwitter.sh` using a crontab job to get periodic updates (I recommend every day)
 
 ## Sources
 
