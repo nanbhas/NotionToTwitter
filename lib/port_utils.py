@@ -165,6 +165,7 @@ def postRowToTwitter(row, api, notion):
         # get thread from notion
         thread = row.getTweetThread()
         tweeted = True
+        firstTweet = True
 
         for tweet in thread:
             
@@ -192,6 +193,10 @@ def postRowToTwitter(row, api, notion):
                 errorText = errorText + '\n' + 'UPDATE STATUS SUCCESS' if r.status_code == 200 else 'UPDATE STATUS FAILURE: ' + r.text
                 # update reply to ID
                 replyToID = str(r.json()['id'])
+                # thread tweet ID
+                if firstTweet:
+                    tweetID = replyToID
+                    firstTweet = False
 
             except:
                 tweeted = False
@@ -200,7 +205,8 @@ def postRowToTwitter(row, api, notion):
         # update Notion
         updates = {}
         updates['Tweeted?'] = {"checkbox": tweeted}
-        updates['Error Message'] = {"rich_text": [{"text": { "content": errorText }}]}    
+        updates['Error Message'] = {"rich_text": [{"text": { "content": errorText }}]}
+        updates['Start Tweet ID'] =  {"rich_text": [{"text": { "content": tweetID }}]}   
         notion.pages.update(row.pageID, properties = updates)
         print('Updated Notion')
         
