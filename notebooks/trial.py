@@ -334,7 +334,7 @@ print('SUCCESS' if rp.status_code == 200 else 'PROBLEM: ' + rp.text)
 
 # %%
 # STEP 1 - upload image
-file = open('../images/stanford_logo.png', 'rb')
+file = open('../data_temp/stanford_logo.png', 'rb')
 data = file.read()
 rr = api.request('media/upload', None, {'media': data})
 print('UPLOAD MEDIA SUCCESS' if rr.status_code == 200 else 'UPLOAD MEDIA FAILURE: ' + rr.text)
@@ -350,7 +350,7 @@ print('UPDATE STATUS SUCCESS' if zz.status_code == 200 else 'UPDATE STATUS FAILU
 
 # %%
 # STEP 1 - upload image
-file = open('../images/oats.jpg', 'rb')
+file = open('../data_temp/oats.jpg', 'rb')
 data = file.read()
 rrs = api.request('media/upload', None, {'media': data})
 print('UPLOAD MEDIA SUCCESS' if rrs.status_code == 200 else 'UPLOAD MEDIA FAILURE: ' + rrs.text)

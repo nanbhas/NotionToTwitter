@@ -1,9 +1,9 @@
 # Custom
-secrets
-images
-STDOUTlog_nanbhas.txt
-STDOUTlog_medai.txt
-STDOUTlog_test.txt
+secrets/*
+!secrets/*_dummy.json
+data_temp
+STDOUTlog_*
+!STDOUTlog_examples.txt
 globalStore/privateConstants.py
 
 
