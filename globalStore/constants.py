@@ -9,6 +9,8 @@ import globalStore.privateConstants as privateConstants
 
 ### All global constants here
 
+# enter paths to the correct secret files
+
 TWITTER_SECRETS = {
     'nanbhas': privateConstants.TWITTER_SECRET_FILE_NAB,
     'medai': privateConstants.TWITTER_SECRET_FILE_MEDAI,
