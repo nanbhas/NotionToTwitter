@@ -1,6 +1,8 @@
 <div align="center">    
  
 # NotionToTwitter  
+
+<img src="docs/NotionToTwitter.png" alt="NotionToTwitter" style="width:200px;"/>
  
 </div>
  
@@ -11,6 +13,10 @@ This project allows you to post newly added threads written in your Notion datab
 
 ```
 .
++-- docs/
+|   +-- images/
+|   |   +-- demo.png
+|   |   +-- icon.png
 +-- globalStore/
 |   +-- constants.py
 +-- lib/
@@ -20,6 +26,9 @@ This project allows you to post newly added threads written in your Notion datab
 |   +-- test port_utils.py
 +-- scripts/
 |   +-- runNotionToTwitter.sh
++-- secrets/
+|   +-- secrets_notion.json
+|   +-- secrets_twitter.json
 +-- src/
 |   +-- notionToTwitter.py
 +-- .gitignore
@@ -35,8 +44,12 @@ Additional directory to store images. Make sure to sync it to a cloud service of
 GoogleDrive/images/
 ```
 
+---
+![NotionToTwitter](docs/NotionToTwitter_screenshot.PNG)
+---
+
 ## Usage
-1. Register an app on Twitters's developer portal (follow instructions online)
+1. Register an app on Twitters's developer portal (follow instructions [online](https://developer.twitter.com/en/docs/platform-overview)).
 2. Obtain its `APIConsumerKey`, `APIConsumerSecret`, `Bearer Token`, `AccessToken` and `AccessTokenSecret` and add it to `secrets/secrets_twitter.json` in the following format:
 ```
 {
@@ -47,9 +60,9 @@ GoogleDrive/images/
     "AccessTokenSecret": "your access token here"
 }
 ```
-3. Register a private integration on your Notion workspace (follow instructions online)
+3. Register a private integration on your Notion workspace (follow instructions [online](https://www.notion.so/help/create-integrations-with-the-notion-api#create-an-internal-integration))
 4. Obtain its `notionToken`
-5. Create a database on Notion to contain all the entries you need to post on Twitter. Make sure it has the following properties. If you want to add more properties or remove, modify the functions and class in `lib/port_utils.py`.
+5. Create a database on Notion to contain all the entries you need to post on Twitter. Make sure it has the following properties. If you want to add more properties or remove, modify the functions and classes in `lib/port_utils.py`.
 ```
 Title property: Tweet
 Formula properties: Image Path Prefix, Username, Start Tweet URL
@@ -69,13 +82,22 @@ URL properties: Retweet URL
 }
 ```
 7. Run the python script `src/notionToTwitter.py` (no command line args)
-8. You can periodically run this file again as a script `scripts/runNotionToTwitter.sh` using a crontab job to get periodic updates (I recommend every day)
+8. You can periodically run this file again as a script `scripts/runNotionToTwitter.sh` using a crontab job to get periodic updates (I recommend every day). For more information on Crontab, check out this [reference](https://crontab.guru/).
 
 ## Sources
 
 - [Twitter API Python SDK](https://github.com/geduldig/TwitterAPI)
 - [Notion API Python SDK](https://github.com/ramnes/notion-sdk-py)
 
-## If you use it in your work and want to adapt this code, please consider starring this repo or forking from it! 
+## If you use it in your work and want to adapt this code, please consider starring this repo or forking from it!
+
+```
+@misc{nanbhas2021_notionToTwitter,
+  title={Notion To Twitter},
+  author={Nandita Bhaskhar},
+  howpublished={GitHub Repo, https://github.com/nanbhas/NotionToTwitter},
+  year={2021}
+}
+``` 
  
 
