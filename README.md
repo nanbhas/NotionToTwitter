@@ -7,7 +7,7 @@
 </div>
  
 ## Description   
-This project allows you to post newly added threads written in your Notion database (along with the image name) directly on to your twitter account via the APIs provided by the two. Update the `Post Date` column in your Notion database to schedule your tweets well. You can run the script `scripts/runNotionToTwitter.sh` peridocially at a reasonable frequency via a `crontab` job. 
+This project allows you to post newly added threads written in your Notion database (along with the images) directly on to your twitter account via the APIs provided by the two. Update the `Post Date` column in your Notion database to schedule your tweets. You can run the script `scripts/runNotionToTwitter.sh` peridocially at a reasonable frequency via a `crontab` job. 
 
 ## Directory Structure
 
@@ -39,9 +39,9 @@ This project allows you to post newly added threads written in your Notion datab
 +-- STDOUTlog_examples.txt
 ```
 
-Additional directory to store images. Make sure to sync it to a cloud service of your choice ( I use Google Drive). You should also add this path to the Notion DB in the `Image Path Prefix` column
+Additional directory to store images. Make sure to sync it to a cloud service of your choice if you plan to run this codebase on a server (I use Google Drive). You should also add this path to the Notion DB in the `Image Path Prefix` column.
 ```
-GoogleDrive/images/
+path to google drive/My Drive/Notion/TwitterImages
 ```
 
 ---
@@ -73,7 +73,8 @@ URL properties: Retweet URL
 ```
 - **Note**: The formula for the `Image Path Prefix` property should be `format("path-to-your-local-images-folder")`
 - **Note**: The formula for the `Username` property should be `format("your-twitter-username")`
-- **Note**: Write your tweet / tweet thread in the page content (row) of the datebase -- one tweet per block. If you have an image for any of the tweets, just add an `<img>` tag followed by the name of the image. e.g. `tweet text here blah blach <img>image-name.png`. If the first tweet in the thread (or the only tweet in the thread) is a quote retweet, add the URL of the retweet in the property `Retweet URL`.
+- **Note**: Write your tweet / tweet thread in the page content (row) of the database -- one tweet per block. If you have an image for any of the tweets, just add an `<img>` tag followed by the name of the image. e.g. `tweet text here blah blach <img>image1.png`. If you want to include multiple images to a single tweet, separate the image names using **;** without any spaces, i.e. `this is my tweet text. Look out for images.<img>image1.png;image2.jpg;image3`. If the first tweet in the thread (or the only tweet in the thread) is a quote retweet, add the URL of the retweet in the property `Retweet URL`.
+- **Note**: Only `Tweet`, `Post Date`, `Retweet URL` (optional) and Tweet page contents are to be filled by you. `Image Path Prefix` and `Username` are fixed to the database and the rest of the properties are filled in by the script.
 6. Get the `databaseID` and add it to `secrets/secrets_notion.json` in the following format:
 ```
 {
@@ -81,7 +82,7 @@ URL properties: Retweet URL
     "databaseID": "your notion database ID"
 }
 ```
-7. Run the python script `src/notionToTwitter.py` (no command line args)
+7. Run the python script `src/notionToTwitter.py` with the correct Twitter username and Notion database (as given in the dictionaries in `globalStore/constants.py`) as command line arguments
 8. You can periodically run this file again as a script `scripts/runNotionToTwitter.sh` using a crontab job to get periodic updates (I recommend every day). For more information on Crontab, check out this [reference](https://crontab.guru/).
 
 ## Sources
