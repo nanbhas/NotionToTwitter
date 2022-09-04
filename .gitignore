@@ -5,6 +5,7 @@ data_temp
 STDOUTlog_*
 !STDOUTlog_examples.txt
 globalStore/privateConstants.py
+notebooks/trial.py
 
 
 # Byte-compiled / optimized / DLL files
