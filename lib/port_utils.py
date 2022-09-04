@@ -62,7 +62,7 @@ class NotionTweetRow():
                 pass
             text = para.split('<img>')[0]
             try:
-                tmp = para.split('<img>')[1:]
+                tmp = para.split('<img>')[1].split(';')
                 images = [os.path.join(self.imagePathPrefix, item) for item in tmp]
             except:
                 images = None
