@@ -85,6 +85,19 @@ URL properties: Retweet URL
 7. Run the python script `src/notionToTwitter.py` with the correct Twitter username and Notion database (as given in the dictionaries in `globalStore/constants.py`) as command line arguments
 8. You can periodically run this file again as a script `scripts/runNotionToTwitter.sh` using a crontab job to get periodic updates (I recommend every day). For more information on Crontab, check out this [reference](https://crontab.guru/).
 
+## Requirements
+
+You can install all the requirements using the following command:
+
+```
+pip install -r requirements.txt
+pip install -e .
+```
+
+## Note
+
+Now that the Twitter API has been announced to no longer be free, there may be changes regarding the number of requests you can make per day. 
+
 ## Sources
 
 - [Twitter API Python SDK](https://github.com/geduldig/TwitterAPI)
